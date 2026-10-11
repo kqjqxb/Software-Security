@@ -1,0 +1,39 @@
+%% Структурна схема рішення ЛР4 (варіант 12)
+flowchart LR
+    var(["common/variants.py<br/>параметри варіанта 12"]):::ext
+    lib(["Бібліотека cryptography<br/>43.0.1"]):::ext
+
+    subgraph edu ["Навчальний RSA (кроки 2, 3, 7)"]
+        rsa["rsa_edu.py<br/>каркас курсу"]
+        rdemo["rsa_demo.py<br/>протокол верифікації,<br/>ключі 32 біти"]
+        bench["rsa_bench.py<br/>час генерації<br/>та факторизації"]
+    end
+
+    subgraph sym ["Симетричний захист (кроки 4, 5)"]
+        aead["aead.py<br/>ChaCha20-Poly1305"]
+        ademo["aead_demo.py<br/>реакція на підміну"]
+        iv["misuse_static_iv.py<br/>статичний IV у CBC"]
+        mac["misuse_mac_order.py<br/>MAC-then-Encrypt /<br/>Encrypt-then-MAC"]
+    end
+
+    subgraph sig ["Електронний підпис (крок 6)"]
+        sign["sign_demo.py<br/>RSA-PSS (2048)"]
+    end
+
+    tests[["tests/test_rsa.py,<br/>tests/test_variant.py"]]
+
+    var --> rdemo
+    rsa --> rdemo
+    rsa --> bench
+    lib --> aead
+    lib --> iv
+    lib --> mac
+    lib --> sign
+    aead --> ademo
+    rdemo --> tests
+    ademo --> tests
+    iv --> tests
+    mac --> tests
+    sign --> tests
+
+    classDef ext fill:#eee,stroke:#333;

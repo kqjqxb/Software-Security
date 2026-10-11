@@ -1,0 +1,29 @@
+%% Структурна схема підсистеми автентифікації (варіант 12)
+flowchart LR
+    user(["Користувач"]):::ext
+
+    svc["AuthService<br/>register / login"]
+    lock["FixedLockout<br/>is_allowed / record_attempt"]
+    pwd["passwords<br/>hash_password / verify_password"]
+    rec["RecoveryCodes<br/>verify"]
+    gen["generate_codes<br/>10 кодів"]
+    and["anderson<br/>min_length, L = 7"]
+
+    state[("Стан спроб<br/>(словник у пам'яті)")]
+    users[("Облікові записи:<br/>рядок PBKDF2, хеш-суми кодів")]
+    env(["Змінна середовища<br/>AUTH_PEPPER"]):::ext
+
+    user -->|"ім'я, пароль, код"| svc
+    svc -->|"результат входу"| user
+    svc -->|"1. чи дозволено спробу<br/>4. результат спроби"| lock
+    svc -->|"2. перевірка пароля"| pwd
+    svc -->|"3. перевірка коду"| rec
+    svc -->|"нові коди під час реєстрації"| gen
+    svc -->|"вимога до довжини пароля"| and
+    lock --- state
+    pwd --- users
+    rec --- users
+    pwd ---|"перець"| env
+    rec ---|"перець"| env
+
+    classDef ext fill:#eee,stroke:#333;

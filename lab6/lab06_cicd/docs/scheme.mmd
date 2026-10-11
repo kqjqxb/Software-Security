@@ -1,0 +1,25 @@
+flowchart TB
+    DEV["Розробник: git push / pull request"] --> GH["GitHub Actions, конвеєр security"]
+    GH --> SAST
+    GH --> SCA
+    GH --> SEC
+    subgraph SAST["Стадія sast"]
+        direction TB
+        B["Bandit"] --> BJ[/"bandit.json"/]
+        S["Semgrep: rules/ + p/python"] --> SJ[/"semgrep.json"/]
+        D["ci/diff_reports.sh: git diff, gitleaks"] --> DJ[/"diff.patch, gitleaks.json"/]
+        BJ --> G{"gate.py"}
+        SJ --> G
+        DJ --> G
+    end
+    subgraph SCA["Стадія sca"]
+        direction TB
+        PA["pip-audit"] --> PJ[/"pip-audit.json"/]
+        CD["cyclonedx-py"] --> SB[/"sbom.json"/]
+    end
+    subgraph SEC["Стадія secrets"]
+        direction TB
+        GL["gitleaks-action"] --> GR[/"звіт про секрети"/]
+    end
+    G -- "секрет у діффі: код 1" --> RED["Складання заблоковано"]
+    G -- "секретів немає: код 0" --> GREEN["Складання пропущено"]

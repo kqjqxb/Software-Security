@@ -1,0 +1,101 @@
+# Конвеєр контролю захищеності для лабораторної роботи 6.
+# Критерій проходження варіанта 12: блокувати за наявності секрету в діффі.
+name: security
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read   # мінімальні права токена (лекція 15)
+
+env:
+  GITLEAKS_VERSION: "8.21.2"
+  GITLEAKS_SHA256: >-
+    5bc41815076e6ed6ef8fbecc9d9b75bcae31f39029ceb55da08086315316e3ba
+
+jobs:
+  sast:
+    name: Статичний аналіз (SAST)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # для діффу потрібна історія, а не лише останній коміт
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Встановлення інструментів
+        # setuptools: semgrep 1.86.0 імпортує pkg_resources, якого немає в 3.12
+        run: pip install bandit==1.7.10 semgrep==1.86.0 "setuptools<81"
+      - name: Встановлення gitleaks
+        run: |
+          file="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          url="https://github.com/gitleaks/gitleaks/releases/download"
+          curl -fsSL -o "$RUNNER_TEMP/$file" "$url/v${GITLEAKS_VERSION}/$file"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/$file" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/bin"
+          tar -xzf "$RUNNER_TEMP/$file" -C "$RUNNER_TEMP/bin" gitleaks
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      # Ціль SAST — каталог target/ із копією застосунку ЛР5 (див. методичку, крок 7).
+      - name: Bandit
+        run: bandit -r target -f json -o bandit.json || true
+      - name: Semgrep (власні правила + реєстр)
+        run: semgrep --config rules/ --config "p/python" --json --output semgrep.json target || true
+      # Звіти для критерію варіанта: діфф події та секрети в його комітах.
+      - name: Діфф і секрети в діффі
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: ci/diff_reports.sh "$BASE"
+      - name: Quality gate
+        run: python gate.py
+      - name: Збереження звітів
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sast-reports
+          path: |
+            bandit.json
+            semgrep.json
+            gitleaks.json
+
+  sca:
+    name: Аналіз складу ПЗ (SCA) та SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Встановлення інструментів
+        run: pip install pip-audit==2.7.3 cyclonedx-bom==4.6.1
+      # Ціль SCA — навчальний перелік залежностей audit_target.txt
+      # (застосунок ЛР5 навмисно не має вразливих залежностей).
+      - name: Пошук уразливих залежностей
+        run: pip-audit -r audit_target.txt || true
+      - name: Машинний звіт pip-audit
+        run: pip-audit -r audit_target.txt -f json -o pip-audit.json || true
+      # Файл вимог — позиційний аргумент: ключ -i задає адресу індексу пакетів.
+      - name: Формування SBOM (CycloneDX)
+        run: cyclonedx-py requirements audit_target.txt -o sbom.json || true
+      - name: Збереження звітів
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sca-reports
+          path: |
+            pip-audit.json
+            sbom.json
+
+  secrets:
+    name: Сканування секретів
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

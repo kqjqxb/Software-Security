@@ -1,0 +1,71 @@
+# Приклади власних правил Semgrep (лекція 14). Здобувач додає правило свого варіанта.
+rules:
+  - id: python-eval-untrusted
+    languages: [python]
+    severity: ERROR
+    message: Виклик eval() на потенційно недовірених даних (CWE-95).
+    patterns:
+      - pattern: eval(...)
+
+  - id: python-md5-for-password
+    languages: [python]
+    severity: WARNING
+    message: MD5/SHA-1 непридатні для зберігання паролів (CWE-916). Використайте Argon2id.
+    patterns:
+      - pattern-either:
+          - pattern: hashlib.md5(...)
+          - pattern: hashlib.sha1(...)
+
+  - id: python-subprocess-shell-true
+    languages: [python]
+    severity: ERROR
+    message: subprocess із shell=True на змінних даних — ін'єкція команди ОС (CWE-78).
+    patterns:
+      - pattern: subprocess.run(..., shell=True, ...)
+
+  # ── Власні правила варіанта 12 ─────────────────────────────────────────
+  - id: my-lomakin-hardcoded-secret-key
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Секрет сесії Flask задано рядковим літералом або літералом за
+      замовчуванням (CWE-798). Читайте його лише з оточення.
+    metadata:
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+    patterns:
+      - pattern-either:
+          - pattern: $APP.secret_key = "..."
+          - pattern: $APP.secret_key = os.environ.get($NAME, "...")
+          - pattern: $APP.secret_key = os.getenv($NAME, "...")
+          - pattern: $APP.config["SECRET_KEY"] = "..."
+          - pattern: $APP.config["SECRET_KEY"] = os.environ.get($NAME, "...")
+          - pattern: $APP.config["SECRET_KEY"] = os.getenv($NAME, "...")
+
+  - id: my-lomakin-admin-route-no-authz
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Адміністративний маршрут $PATH не перевіряє роль користувача (CWE-862).
+    metadata:
+      cwe: "CWE-862: Missing Authorization"
+    patterns:
+      - pattern: |
+          @$APP.route("$PATH", ...)
+          def $FUNC(...):
+              ...
+      - metavariable-regex:
+          metavariable: $PATH
+          regex: ^/admin(/|$)
+      - pattern-not-regex: \[['"]role['"]\]
+
+  - id: my-lomakin-jinja-safe-filter
+    languages: [generic]
+    severity: WARNING
+    message: >-
+      Фільтр |safe вимикає автоекранування Jinja2 — значення потрапляє в HTML
+      без кодування (CWE-79).
+    metadata:
+      cwe: "CWE-79: Cross-site Scripting"
+    paths:
+      include: ["*.html"]
+    pattern-regex: \{\{[^}]*\|\s*safe\s*\}\}

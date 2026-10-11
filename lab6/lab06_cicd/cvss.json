@@ -1,0 +1,102 @@
+[
+  {
+    "package": "pyyaml",
+    "version": "5.3.1",
+    "id": "PYSEC-2021-142",
+    "cve": "CVE-2020-14343",
+    "fix": [
+      "5.4"
+    ],
+    "cvss": 9.8,
+    "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "sources": [
+      {
+        "source": "nvd@nist.gov",
+        "score": 9.8,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+      }
+    ]
+  },
+  {
+    "package": "jinja2",
+    "version": "2.11.3",
+    "id": "PYSEC-2026-1473",
+    "cve": "CVE-2024-22195",
+    "fix": [
+      "3.1.3"
+    ],
+    "cvss": 6.1,
+    "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N",
+    "sources": [
+      {
+        "source": "security-advisories@github.com",
+        "score": 5.4,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N"
+      },
+      {
+        "source": "nvd@nist.gov",
+        "score": 6.1,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
+      }
+    ]
+  },
+  {
+    "package": "jinja2",
+    "version": "2.11.3",
+    "id": "PYSEC-2026-1471",
+    "cve": "CVE-2025-27516",
+    "fix": [
+      "3.1.6"
+    ],
+    "cvss": 8.8,
+    "vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H",
+    "sources": [
+      {
+        "source": "nvd@nist.gov",
+        "score": 8.8,
+        "vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H"
+      }
+    ]
+  },
+  {
+    "package": "jinja2",
+    "version": "2.11.3",
+    "id": "PYSEC-2026-1474",
+    "cve": "CVE-2024-34064",
+    "fix": [
+      "3.1.4"
+    ],
+    "cvss": 5.4,
+    "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N",
+    "sources": [
+      {
+        "source": "security-advisories@github.com",
+        "score": 5.4,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N"
+      },
+      {
+        "source": "134c704f-9b21-4f2e-91b3-4a467353bcc0",
+        "score": 5.4,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N"
+      }
+    ]
+  },
+  {
+    "package": "jinja2",
+    "version": "2.11.3",
+    "id": "PYSEC-2026-1475",
+    "cve": "CVE-2024-56326",
+    "fix": [
+      "3.1.5"
+    ],
+    "cvss": 7.8,
+    "vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+    "sources": [
+      {
+        "source": "134c704f-9b21-4f2e-91b3-4a467353bcc0",
+        "score": 7.8,
+        "vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"
+      }
+    ]
+  }
+]

@@ -1,0 +1,302 @@
+{
+  "errors": [],
+  "generated_at": "2026-10-11T19:44:15Z",
+  "metrics": {
+    "_totals": {
+      "CONFIDENCE.HIGH": 7,
+      "CONFIDENCE.LOW": 1,
+      "CONFIDENCE.MEDIUM": 4,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 3,
+      "SEVERITY.LOW": 2,
+      "SEVERITY.MEDIUM": 7,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 256,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "target/app.py": {
+      "CONFIDENCE.HIGH": 6,
+      "CONFIDENCE.LOW": 1,
+      "CONFIDENCE.MEDIUM": 2,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 2,
+      "SEVERITY.LOW": 2,
+      "SEVERITY.MEDIUM": 5,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 162,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "target/internal.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 1,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 1,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 20,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "target/seed.py": {
+      "CONFIDENCE.HIGH": 1,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 1,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 1,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 1,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 74,
+      "nosec": 0,
+      "skipped_tests": 0
+    }
+  },
+  "results": [
+    {
+      "code": "21 import os\n22 import pickle  # noqa: S403 \u2014 \u043d\u0430\u0432\u043c\u0438\u0441\u043d\u043e \u0432\u0440\u0430\u0437\u043b\u0438\u0432\u0435, \u0434\u0438\u0432. \u043c\u0430\u0440\u0448\u0440\u0443\u0442 /prefs\n23 import sqlite3\n",
+      "col_offset": 0,
+      "end_col_offset": 13,
+      "filename": "target/app.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 502,
+        "link": "https://cwe.mitre.org/data/definitions/502.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with pickle module.",
+      "line_number": 22,
+      "line_range": [
+        22
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.7.10/blacklists/blacklist_imports.html#b403-import-pickle",
+      "test_id": "B403",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "23 import sqlite3\n24 import subprocess  # noqa: S404 \u2014 \u043d\u0430\u0432\u043c\u0438\u0441\u043d\u043e \u0432\u0440\u0430\u0437\u043b\u0438\u0432\u0435, \u0434\u0438\u0432. \u043c\u0430\u0440\u0448\u0440\u0443\u0442 /admin/ping\n25 import urllib.request\n",
+      "col_offset": 0,
+      "end_col_offset": 17,
+      "filename": "target/app.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with the subprocess module.",
+      "line_number": 24,
+      "line_range": [
+        24
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.7.10/blacklists/blacklist_imports.html#b404-import-subprocess",
+      "test_id": "B404",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "28 \n29 DB_PATH = os.environ.get(\"VULNAPP_DB\", \"/tmp/vulnapp.db\")\n30 UPLOAD_DIR = \"/app/storage\"\n",
+      "col_offset": 39,
+      "end_col_offset": 56,
+      "filename": "target/app.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 377,
+        "link": "https://cwe.mitre.org/data/definitions/377.html"
+      },
+      "issue_severity": "MEDIUM",
+      "issue_text": "Probable insecure usage of temp file/directory.",
+      "line_number": 29,
+      "line_range": [
+        29
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.7.10/plugins/b108_hardcoded_tmp_directory.html",
+      "test_id": "B108",
+      "test_name": "hardcoded_tmp_directory"
+    },
+    {
+      "code": "75         query = (\n76             \"SELECT * FROM users WHERE login = '\" + login_name + \"'\"\n77             \" AND password_hash = '\" + _weak_hash(password) + \"'\"\n",
+      "col_offset": 12,
+      "end_col_offset": 49,
+      "filename": "target/app.py",
+      "issue_confidence": "LOW",
+      "issue_cwe": {
+        "id": 89,
+        "link": "https://cwe.mitre.org/data/definitions/89.html"
+      },
+      "issue_severity": "MEDIUM",
+      "issue_text": "Possible SQL injection vector through string-based query construction.",
+      "line_number": 76,
+      "line_range": [
+        76
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.7.10/plugins/b608_hardcoded_sql_expressions.html",
+      "test_id": "B608",
+      "test_name": "hardcoded_sql_expressions"
+    },
+    {
+      "code": "100     import hashlib\n101     return hashlib.md5(password.encode()).hexdigest()  # noqa: S324\n102 \n",
+      "col_offset": 11,
+      "end_col_offset": 41,
+      "filename": "target/app.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 327,
+        "link": "https://cwe.mitre.org/data/definitions/327.html"
+      },
+      "issue_severity": "HIGH",
+      "issue_text": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+      "line_number": 101,
+      "line_range": [
+        101
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.7.10/plugins/b324_hashlib.html",
+      "test_id": "B324",
+      "test_name": "hashlib"
+    },
+    {
+      "code": "194     try:\n195         with urllib.request.urlopen(url, timeout=3) as resp:  # noqa: S310\n196             return resp.read()[:4096], 200, {\"Content-Type\": \"text/plain; charset=utf-8\"}\n",
+      "col_offset": 13,
+      "end_col_offset": 51,
+      "filename": "target/app.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 22,
+        "link": "https://cwe.mitre.org/data/definitions/22.html"
+      },
+      "issue_severity": "MEDIUM",
+      "issue_text": "Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.",
+      "line_number": 195,
+      "line_range": [
+        195
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.7.10/blacklists/blacklist_calls.html#b310-urllib-urlopen",
+      "test_id": "B310",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "206     # \u0412\u0420\u0410\u0417\u041b\u0418\u0412\u0406\u0421\u0422\u042c 11 (CWE-502): \u0434\u0435\u0441\u0435\u0440\u0456\u0430\u043b\u0456\u0437\u0430\u0446\u0456\u044f \u043d\u0435\u0434\u043e\u0432\u0456\u0440\u0435\u043d\u043e\u0433\u043e \u0432\u043c\u0456\u0441\u0442\u0443 cookie.\n207     data = pickle.loads(base64.b64decode(raw))  # noqa: S301\n208     return f\"\u041d\u0430\u043b\u0430\u0448\u0442\u0443\u0432\u0430\u043d\u043d\u044f: {data}\", 200\n",
+      "col_offset": 11,
+      "end_col_offset": 46,
+      "filename": "target/app.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 502,
+        "link": "https://cwe.mitre.org/data/definitions/502.html"
+      },
+      "issue_severity": "MEDIUM",
+      "issue_text": "Pickle and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue.",
+      "line_number": 207,
+      "line_range": [
+        207
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.7.10/blacklists/blacklist_calls.html#b301-pickle",
+      "test_id": "B301",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "225     out = subprocess.run(  # noqa: S602\n226         f\"ping -c 1 {host}\", shell=True, capture_output=True, text=True, timeout=5\n227     )\n228     return f\"<pre>{out.stdout}{out.stderr}</pre>\"\n229 \n",
+      "col_offset": 10,
+      "end_col_offset": 5,
+      "filename": "target/app.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "HIGH",
+      "issue_text": "subprocess call with shell=True identified, security issue.",
+      "line_number": 226,
+      "line_range": [
+        225,
+        226,
+        227
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.7.10/plugins/b602_subprocess_popen_with_shell_equals_true.html",
+      "test_id": "B602",
+      "test_name": "subprocess_popen_with_shell_equals_true"
+    },
+    {
+      "code": "236     # \u043b\u0438\u0448\u0435 \u043d\u0430 127.0.0.1 (\u0434\u0438\u0432. docker-compose.yml).\n237     app.run(host=\"0.0.0.0\", port=5000, debug=False)  # noqa: S104\n",
+      "col_offset": 17,
+      "end_col_offset": 26,
+      "filename": "target/app.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 605,
+        "link": "https://cwe.mitre.org/data/definitions/605.html"
+      },
+      "issue_severity": "MEDIUM",
+      "issue_text": "Possible binding to all interfaces.",
+      "line_number": 237,
+      "line_range": [
+        237
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.7.10/plugins/b104_hardcoded_bind_all_interfaces.html",
+      "test_id": "B104",
+      "test_name": "hardcoded_bind_all_interfaces"
+    },
+    {
+      "code": "30 if __name__ == \"__main__\":\n31     app.run(host=\"0.0.0.0\", port=5001)\n",
+      "col_offset": 17,
+      "end_col_offset": 26,
+      "filename": "target/internal.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 605,
+        "link": "https://cwe.mitre.org/data/definitions/605.html"
+      },
+      "issue_severity": "MEDIUM",
+      "issue_text": "Possible binding to all interfaces.",
+      "line_number": 31,
+      "line_range": [
+        31
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.7.10/plugins/b104_hardcoded_bind_all_interfaces.html",
+      "test_id": "B104",
+      "test_name": "hardcoded_bind_all_interfaces"
+    },
+    {
+      "code": "68             \"INSERT INTO users (login, password_hash, full_name, email, role) VALUES (?, ?, ?, ?, ?)\",\n69             (login, hashlib.md5(password.encode()).hexdigest(), name, email, role),\n70         )\n",
+      "col_offset": 20,
+      "end_col_offset": 50,
+      "filename": "target/seed.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 327,
+        "link": "https://cwe.mitre.org/data/definitions/327.html"
+      },
+      "issue_severity": "HIGH",
+      "issue_text": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+      "line_number": 69,
+      "line_range": [
+        69
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.7.10/plugins/b324_hashlib.html",
+      "test_id": "B324",
+      "test_name": "hashlib"
+    },
+    {
+      "code": "84 if __name__ == \"__main__\":\n85     path = os.environ.get(\"VULNAPP_DB\", \"/tmp/vulnapp.db\")\n86     seed(path)\n",
+      "col_offset": 40,
+      "end_col_offset": 57,
+      "filename": "target/seed.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 377,
+        "link": "https://cwe.mitre.org/data/definitions/377.html"
+      },
+      "issue_severity": "MEDIUM",
+      "issue_text": "Probable insecure usage of temp file/directory.",
+      "line_number": 85,
+      "line_range": [
+        85
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.7.10/plugins/b108_hardcoded_tmp_directory.html",
+      "test_id": "B108",
+      "test_name": "hardcoded_tmp_directory"
+    }
+  ]
+}
