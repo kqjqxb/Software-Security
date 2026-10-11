@@ -1,11 +1,20 @@
-"""Каркас диспетчера доступу (reference monitor)."""
+"""Диспетчер доступу (reference monitor) — КАРКАС для лабораторної роботи 2.
+
+Здобувач реалізує модель розмежування доступу свого варіанта
+(ACL / capabilities / RBAC / ABAC) та вимоги, позначені `TODO`.
+
+Диспетчер доступу має задовольняти три властивості (лекція 6):
+  1) повне посередництво — жоден доступ не минає диспетчера;
+  2) захищеність — його не можна обійти чи підмінити;
+  3) верифіковність — він достатньо малий, щоб бути перевіреним.
+"""
 from __future__ import annotations
 
+import dataclasses
 import enum
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from datetime import datetime
-from typing import Callable, Iterable
+import json
+import time
+from typing import Iterable
 
 
 class Permission(enum.Flag):
@@ -16,69 +25,90 @@ class Permission(enum.Flag):
     ADMIN = READ | WRITE | DELETE
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass
 class Decision:
     allowed: bool
     reason: str
 
 
-class Policy(ABC):
-    @abstractmethod
-    def evaluate(self, subject: str, obj: str, action: Permission) -> Decision:
-        """Повертає рішення щодо запиту суб'єкта на дію над об'єктом."""
-
-
 class AuditLog:
-    """Реєстраційний журнал: фіксує кожне рішення монітора."""
+    """Реєстраційний та операційний журнали (лекція 7).
 
-    def __init__(self, clock: Callable[[], datetime] = datetime.now) -> None:
-        self._clock = clock
-        self._entries: list[dict] = []
+    Реєстраційний журнал фіксує КОЖНЕ рішення диспетчера; операційний —
+    лише виконані зміни стану. Журнал захищають від підробки (тут — спрощено).
+    """
 
-    def record(self, subject: str, obj: str, action: Permission, decision: Decision) -> None:
-        self._entries.append({
-            "ts": self._clock().isoformat(timespec="seconds"),
+    def __init__(self) -> None:
+        self._records: list[dict] = []
+
+    def record(self, subject: str, obj: str, action: str, decision: Decision) -> None:
+        self._records.append({
+            "ts": self._now(),
             "subject": subject,
             "object": obj,
-            "action": action.name,
+            "action": action,
             "allowed": decision.allowed,
             "reason": decision.reason,
         })
 
+    @staticmethod
+    def _now() -> float:
+        return time.time()
+
     def entries(self) -> list[dict]:
-        return [dict(entry) for entry in self._entries]
+        return list(self._records)
 
     def dump(self) -> str:
-        return "\n".join(
-            f"{e['ts']}  {'ALLOW' if e['allowed'] else 'DENY '}  {e['subject']:<7} {e['action']:<6} "
-            f"{e['object']:<6} {e['reason']}"
-            for e in self._entries
-        )
+        return "\n".join(json.dumps(r, ensure_ascii=False) for r in self._records)
 
 
 class ReferenceMonitor:
-    """Єдина точка посередництва між суб'єктами та об'єктами."""
+    """Єдина точка ухвалення рішень про доступ."""
 
-    def __init__(self, policy: Policy, audit: AuditLog | None = None) -> None:
+    def __init__(self, policy: "Policy", audit: AuditLog | None = None) -> None:
         self._policy = policy
-        self.audit = audit if audit is not None else AuditLog()
+        self._audit = audit or AuditLog()
 
     def check(self, subject: str, obj: str, action: Permission) -> Decision:
         decision = self._policy.evaluate(subject, obj, action)
-        self.audit.record(subject, obj, action, decision)
+        self._audit.record(subject, obj, action.name or str(action), decision)
         return decision
 
     def enforce(self, subject: str, obj: str, action: Permission) -> None:
         decision = self.check(subject, obj, action)
         if not decision.allowed:
-            raise PermissionError(f"{subject} -> {obj} [{action.name}]: {decision.reason}")
+            raise PermissionError(decision.reason)
+
+    @property
+    def audit(self) -> AuditLog:
+        return self._audit
 
 
-class AnomalyDetector(ABC):
-    @abstractmethod
+class Policy:
+    """Базовий клас політики. Здобувач реалізує підклас за своїм варіантом."""
+
+    def evaluate(self, subject: str, obj: str, action: Permission) -> Decision:
+        # TODO(варіант): реалізувати обчислення рішення згідно з обраною моделлю.
+        # Правило безпечних значень за замовчуванням (лекція 5): якщо явного
+        # дозволу немає — доступ заборонено.
+        raise NotImplementedError("Реалізуйте політику свого варіанта")
+
+
+class AnomalyDetector:
+    """Виявлення аномалій у журналі (лекція 7).
+
+    Здобувач реалізує детектори двох аномалій свого варіанта.
+    """
+
     def scan(self, log: AuditLog) -> list[str]:
-        """Повертає перелік сповіщень про аномалії в журналі."""
+        alerts: list[str] = []
+        # TODO(варіант): реалізувати виявлення двох аномалій зі свого завдання,
+        # наприклад «сплеск відмов у доступі від одного суб'єкта» або
+        # «послідовний перебір ідентифікаторів об'єктів».
+        return alerts
 
 
-def subjects_with_access(policy: Policy, subjects: Iterable[str], obj: str, action: Permission) -> list[str]:
+def subjects_with_access(policy: Policy, subjects: Iterable[str], obj: str,
+                         action: Permission) -> list[str]:
+    """Запит «хто має доступ до об'єкта» — природний для подання за стовпцями (ACL)."""
     return [s for s in subjects if policy.evaluate(s, obj, action).allowed]

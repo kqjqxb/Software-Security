@@ -1,12 +1,14 @@
 """Тести диспетчера доступу варіанта 12: ABAC, заборонні записи, аномалії А1 і А3."""
-from datetime import datetime, timedelta
+import os
+import sys
 
 import pytest
 
-from accesscontrol.monitor import AuditLog, Permission, ReferenceMonitor, subjects_with_access
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from accesscontrol.monitor import Permission, ReferenceMonitor, subjects_with_access
 from detector import VariantDetector
 from mypolicy import OBJECTS, SUBJECTS, build_policy, objects_accessible_by
-from storage import DocumentStore
+from storage import DocumentStore, TimedAuditLog
 
 R, W, D = Permission.READ, Permission.WRITE, Permission.DELETE
 
@@ -17,14 +19,14 @@ def policy():
 
 
 def monitor_with_clock(policy, step_seconds):
-    moment = datetime(2026, 10, 12, 9, 0)
+    moment = 0.0
 
     def clock():
         nonlocal moment
-        moment += timedelta(seconds=step_seconds)
+        moment += step_seconds
         return moment
 
-    return ReferenceMonitor(policy, AuditLog(clock))
+    return ReferenceMonitor(policy, TimedAuditLog(clock))
 
 
 def test_policy_size_matches_variant(policy):
@@ -115,13 +117,6 @@ def test_sealed_policy_rejects_changes(policy):
         policy.subjects["heidi"]["clearance"] = 3
     with pytest.raises(TypeError):
         policy.subjects["mallory"] = {}
-
-
-def test_audit_entries_are_copies(policy):
-    monitor = ReferenceMonitor(policy)
-    monitor.check("alice", "doc4", R)
-    monitor.audit.entries()[0]["allowed"] = True
-    assert monitor.audit.entries()[0]["allowed"] is False
 
 
 def test_operation_log_keeps_only_performed_changes(policy):

@@ -1,32 +1,39 @@
 """Сховище документів: кожна операція проходить через монітор доступу."""
 from __future__ import annotations
 
-from datetime import datetime
+import json
+import time
 from typing import Callable
 
-from accesscontrol.monitor import Permission, ReferenceMonitor
+from accesscontrol.monitor import AuditLog, Permission, ReferenceMonitor
+
+
+class TimedAuditLog(AuditLog):
+    """Реєстраційний журнал із заданим джерелом часу для відтворюваних сценаріїв."""
+
+    def __init__(self, clock: Callable[[], float]) -> None:
+        super().__init__()
+        self._clock = clock
+
+    def _now(self) -> float:
+        return self._clock()
 
 
 class OperationLog:
     """Операційний журнал: фіксує лише виконані зміни стану."""
 
-    def __init__(self, clock: Callable[[], datetime] = datetime.now) -> None:
+    def __init__(self, clock: Callable[[], float] = time.time) -> None:
         self._clock = clock
-        self._entries: list[dict] = []
+        self._records: list[dict] = []
 
     def record(self, subject: str, obj: str, operation: str) -> None:
-        self._entries.append({
-            "ts": self._clock().isoformat(timespec="seconds"),
-            "subject": subject,
-            "object": obj,
-            "operation": operation,
-        })
+        self._records.append({"ts": self._clock(), "subject": subject, "object": obj, "operation": operation})
 
     def entries(self) -> list[dict]:
-        return [dict(entry) for entry in self._entries]
+        return list(self._records)
 
     def dump(self) -> str:
-        return "\n".join(f"{e['ts']}  {e['subject']:<7} {e['operation']:<6} {e['object']}" for e in self._entries)
+        return "\n".join(json.dumps(r, ensure_ascii=False) for r in self._records)
 
 
 class DocumentStore:

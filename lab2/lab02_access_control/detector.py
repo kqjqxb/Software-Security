@@ -3,17 +3,22 @@ from __future__ import annotations
 
 import collections
 import re
-from datetime import datetime, timedelta
 
 from accesscontrol.monitor import AnomalyDetector, AuditLog
 
 _NUMBER = re.compile(r"(\d+)$")
 
 
+def _object_number(name: str) -> int | None:
+    match = _NUMBER.search(name)
+    return int(match.group(1)) if match else None
+
+
 class VariantDetector(AnomalyDetector):
-    def __init__(self, deny_threshold: int = 5, window_seconds: int = 60, run_threshold: int = 5) -> None:
+    def __init__(self, deny_threshold: int = 5, window_seconds: int = 60,
+                 run_threshold: int = 5) -> None:
         self.deny_threshold = deny_threshold
-        self.window = timedelta(seconds=window_seconds)
+        self.window_seconds = window_seconds
         self.run_threshold = run_threshold
 
     def scan(self, log: AuditLog) -> list[str]:
@@ -21,22 +26,23 @@ class VariantDetector(AnomalyDetector):
         return self._deny_bursts(entries) + self._enumerations(entries)
 
     def _deny_bursts(self, entries: list[dict]) -> list[str]:
-        denials: dict[str, list[datetime]] = collections.defaultdict(list)
+        denials: dict[str, list[float]] = collections.defaultdict(list)
         for entry in entries:
             if not entry["allowed"]:
-                denials[entry["subject"]].append(datetime.fromisoformat(entry["ts"]))
+                denials[entry["subject"]].append(entry["ts"])
 
         alerts = []
         for subject, moments in denials.items():
             moments.sort()
             peak, start = 0, 0
             for end, moment in enumerate(moments):
-                while moment - moments[start] > self.window:
+                while moment - moments[start] > self.window_seconds:
                     start += 1
                 peak = max(peak, end - start + 1)
             if peak >= self.deny_threshold:
-                alerts.append(f"А1: сплеск відмов — {subject}: {peak} відмов за "
-                              f"{int(self.window.total_seconds())} с (поріг {self.deny_threshold})")
+                alerts.append(
+                    f"А1: сплеск відмов — {subject}: {peak} відмов "
+                    f"за {self.window_seconds} с (поріг {self.deny_threshold})")
         return alerts
 
     def _enumerations(self, entries: list[dict]) -> list[str]:
@@ -51,19 +57,21 @@ class VariantDetector(AnomalyDetector):
             first, last = self._longest_run(objects)
             length = last - first + 1
             if length >= self.run_threshold:
-                alerts.append(f"А3: послідовний перебір — {subject}: {length} об'єктів поспіль "
-                              f"({objects[first]}…{objects[last]}, поріг {self.run_threshold})")
+                alerts.append(
+                    f"А3: послідовний перебір — {subject}: {length} об'єктів поспіль "
+                    f"({objects[first]}…{objects[last]}, поріг {self.run_threshold})")
         return alerts
 
     @staticmethod
     def _longest_run(objects: list[str]) -> tuple[int, int]:
-        """Межі найдовшої серії звернень, у якій номер об'єкта щоразу змінюється на 1 в один бік."""
-        numbers = [int(m.group(1)) if (m := _NUMBER.search(name)) else None for name in objects]
+        """Межі найдовшої серії, де номер об'єкта щоразу змінюється на 1 в один бік."""
+        numbers = [_object_number(name) for name in objects]
         best = (0, -1)
         start, step = 0, 0
         for i, number in enumerate(numbers):
             previous = numbers[i - 1] if i else None
-            delta = number - previous if number is not None and previous is not None else None
+            known = number is not None and previous is not None
+            delta = number - previous if known else None
             if delta not in (1, -1):
                 start, step = i, 0
             elif delta != step:

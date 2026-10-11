@@ -1,10 +1,10 @@
 """Демонстрація підсистеми розмежування доступу (кроки 3–7)."""
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from accesscontrol.monitor import AuditLog, Permission, ReferenceMonitor, subjects_with_access
+from accesscontrol.monitor import Permission, ReferenceMonitor, subjects_with_access
 from detector import VariantDetector
 from mypolicy import OBJECTS, SUBJECTS, build_policy, objects_accessible_by
-from storage import DocumentStore, OperationLog
+from storage import DocumentStore, OperationLog, TimedAuditLog
 
 R, W, D = Permission.READ, Permission.WRITE, Permission.DELETE
 
@@ -36,11 +36,11 @@ EXPECTED = [
 class Clock:
     """Керований годинник, щоб вивід демонстрації був відтворюваним."""
 
-    def __init__(self, start: datetime, step: timedelta) -> None:
-        self.now = start
+    def __init__(self, start: datetime, step: float) -> None:
+        self.now = start.timestamp()
         self.step = step
 
-    def __call__(self) -> datetime:
+    def __call__(self) -> float:
         self.now += self.step
         return self.now
 
@@ -63,26 +63,26 @@ def show_decisions(policy) -> None:
 def work_day(monitor: ReferenceMonitor, store: DocumentStore) -> int:
     """Звичайна робота користувачів; повертає кількість звернень до монітора."""
     operations = [
-        lambda: store.read("alice", "doc2"),
-        lambda: store.write("alice", "doc2", "специфікація, версія 2"),
-        lambda: store.read("alice", "doc4"),
-        lambda: store.read("heidi", "doc6"),
-        lambda: store.write("heidi", "doc1", "правка стажиста"),
-        lambda: store.delete("bob", "doc3"),
-        lambda: store.delete("bob", "doc5"),
-        lambda: store.read("carol", "doc9"),
-        lambda: store.write("dave", "doc12", "бюджет, версія 2"),
-        lambda: store.read("erin", "doc16"),
-        lambda: store.read("grace", "doc11"),
-        lambda: store.read("grace", "doc17"),
-        lambda: store.write("frank", "doc15", "кадрова політика, версія 2"),
-        lambda: monitor.check("dave", "doc14", R),
+        (store.read, "alice", "doc2"),
+        (store.write, "alice", "doc2", "специфікація, версія 2"),
+        (store.read, "alice", "doc4"),
+        (store.read, "heidi", "doc6"),
+        (store.write, "heidi", "doc1", "правка стажиста"),
+        (store.delete, "bob", "doc3"),
+        (store.delete, "bob", "doc5"),
+        (store.read, "carol", "doc9"),
+        (store.write, "dave", "doc12", "бюджет, версія 2"),
+        (store.read, "erin", "doc16"),
+        (store.read, "grace", "doc11"),
+        (store.read, "grace", "doc17"),
+        (store.write, "frank", "doc15", "кадрова політика, версія 2"),
+        (monitor.check, "dave", "doc14", R),
     ]
-    for operation in operations:
+    for operation, subject, obj, *rest in operations:
         try:
-            operation()
+            operation(subject, obj, *rest)
         except PermissionError as error:
-            print("відмову перехоплено:", error)
+            print(f"відмову перехоплено: {subject} -> {obj} [{operation.__name__}]: {error}")
     return len(operations)
 
 
@@ -99,8 +99,8 @@ def main() -> None:
     show_decisions(policy)
 
     print("\n== Монітор і журнали ==")
-    clock = Clock(datetime(2026, 10, 12, 9, 0), timedelta(minutes=5))
-    monitor = ReferenceMonitor(policy, AuditLog(clock))
+    clock = Clock(datetime(2026, 10, 12, 9, 0), step=300)
+    monitor = ReferenceMonitor(policy, TimedAuditLog(clock))
     store = DocumentStore(monitor, {name: f"вміст {name}" for name in objects}, OperationLog(lambda: clock.now))
     calls = work_day(monitor, store)
     entries = monitor.audit.entries()
@@ -115,7 +115,7 @@ def main() -> None:
     detector = VariantDetector(deny_threshold=5, window_seconds=60, run_threshold=5)
     print("звичайна робота:", detector.scan(monitor.audit))
 
-    clock.step = timedelta(seconds=2)
+    clock.step = 2
     for obj, action in [("doc19", R), ("doc16", R), ("doc20", R), ("doc15", R), ("doc19", W), ("doc16", W)]:
         monitor.check("erin", obj, action)
     for number in range(1, 9):
@@ -125,7 +125,7 @@ def main() -> None:
         print(" ", alert)
 
     print("-- чутливість до порога серії --")
-    review = AuditLog(Clock(datetime(2026, 10, 12, 14, 0), timedelta(minutes=3)))
+    review = TimedAuditLog(Clock(datetime(2026, 10, 12, 14, 0), step=180))
     review_monitor = ReferenceMonitor(policy, review)
     for number in range(1, 6):
         review_monitor.check("alice", f"doc{number}", R)

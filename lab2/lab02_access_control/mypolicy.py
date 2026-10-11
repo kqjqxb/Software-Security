@@ -89,7 +89,8 @@ class VariantPolicy(Policy):
         return Decision(False, "явного дозволу немає (safe default)")
 
 
-def objects_accessible_by(policy: Policy, subject: str, objects: Iterable[str], action: Permission) -> list[str]:
+def objects_accessible_by(policy: Policy, subject: str, objects: Iterable[str],
+                          action: Permission) -> list[str]:
     return [o for o in objects if policy.evaluate(subject, o, action).allowed]
 
 
@@ -154,7 +155,8 @@ def build_policy(with_deny: bool = True) -> VariantPolicy:
                  lambda s, o: (_same_department(s, o) and _cleared(s, o)
                                and s["position"] != "intern"))
     policy.allow("P3", "керівник вилучає документи підрозділу", Permission.DELETE,
-                 lambda s, o: _same_department(s, o) and s["position"] in ("lead", "manager"))
+                 lambda s, o: (_same_department(s, o)
+                               and s["position"] in ("lead", "manager")))
     policy.allow("P4", "власник документа", Permission.READ | Permission.WRITE,
                  lambda s, o: o["owner"] == s["id"])
     policy.allow("P5", "загальнодоступний документ", Permission.READ,
@@ -163,12 +165,14 @@ def build_policy(with_deny: bool = True) -> VariantPolicy:
                  lambda s, o: s["position"] == "auditor")
 
     if with_deny:
-        policy.deny("N1", "юридична фіксація документа", Permission.WRITE | Permission.DELETE,
+        policy.deny("N1", "юридична фіксація документа",
+                    Permission.WRITE | Permission.DELETE,
                     lambda s, o: bool(o["legal_hold"]))
         policy.deny("N2", "обліковий запис призупинено", Permission.ADMIN,
                     lambda s, o: s["status"] == "suspended")
         policy.deny("N3", "аудитор не читає персональні дані", Permission.READ,
-                    lambda s, o: s["position"] == "auditor" and o["kind"] == "personal")
+                    lambda s, o: (s["position"] == "auditor"
+                                  and o["kind"] == "personal"))
 
     policy.seal()
     return policy
