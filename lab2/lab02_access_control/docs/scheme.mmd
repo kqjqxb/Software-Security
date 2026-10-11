@@ -1,0 +1,28 @@
+%% Структурна схема підсистеми розмежування доступу (варіант 12)
+flowchart LR
+    subj(["Суб'єкти<br/>alice … grace"]):::ext
+    officer(["Адміністратор<br/>безпеки"]):::ext
+
+    store["DocumentStore<br/>read / write / delete"]
+    mon["ReferenceMonitor<br/>check / enforce"]
+    pol["VariantPolicy (ABAC)<br/>evaluate"]
+    det["VariantDetector<br/>А1, А3"]
+
+    attrs[("Атрибути суб'єктів і об'єктів,<br/>правила P1–P6, заборони N1–N3")]
+    docs[("Об'єкти<br/>doc1 … doc21")]
+    audit[("Реєстраційний журнал<br/>AuditLog")]
+    oplog[("Операційний журнал<br/>OperationLog")]
+
+    subj -->|"операція над документом"| store
+    store -->|"enforce(s, o, a)"| mon
+    mon -->|"evaluate(s, o, a)"| pol
+    pol -->|"Decision"| mon
+    attrs -->|"атрибути, правила"| pol
+    mon -->|"кожне рішення"| audit
+    mon -->|"дозвіл або PermissionError"| store
+    store -->|"дозволена операція"| docs
+    store -->|"виконана зміна"| oplog
+    audit -->|"entries()"| det
+    det -->|"сповіщення"| officer
+
+    classDef ext fill:#eee,stroke:#333;
